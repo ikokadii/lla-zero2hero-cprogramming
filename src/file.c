@@ -18,11 +18,6 @@ int create_db_file(char *filename) {
 
     // check if the file already exists.
     int fd = open(filename, O_RDONLY);
-    // if (fd == -1) {
-    //     perror("open");
-    //     return STATUS_ERROR;
-    // }
-    // printf("fd %d\n", fd);
     if (fd != -1) {
         printf("file already exists. filepath=%s\n", filename);
         status_file_close = close(fd);
