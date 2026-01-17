@@ -74,7 +74,8 @@ int main(int argc, char *argv[]) {
     }
 
     if (newfile == true) {
-        status_db_header = create_db_header(dbfd, &dbheader);
+        // status_db_header = create_db_header(dbfd, &dbheader);
+        status_db_header = create_db_header(&dbheader);
         if (status_db_header == STATUS_ERROR) {
             printf("failed to create database header\n");
             return -1;
