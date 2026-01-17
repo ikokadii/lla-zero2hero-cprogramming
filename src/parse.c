@@ -67,6 +67,12 @@ int validate_db_header(int fd, struct dbheader_t **headerOut) {
     header->count = ntohs(header->count);
     header->filesize = ntohl(header->filesize);
 
+    if (header->magic != HEADER_MAGIC) {
+        printf("improper header magic\n");
+        free(header);
+        return STATUS_ERROR;
+    }
+
     if (header->version != 1) {
         printf("improper header verion\n");
         free(header);
