@@ -3,9 +3,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <string.h>
 
 #include "common.h"
@@ -14,10 +12,47 @@
 // void list_employees(struct dbheader_t *dbhdr, struct employee_t *employees) {
 // }
 
-// int add_employee(struct dbheader_t *dbhdr, struct employee_t *employees, char *addstring) {
-// }
+int add_employee(struct dbheader_t *dbhdr, struct employee_t *employees, char *addstring) {
+    char *name = strtok(addstring, ",");
+    char *address = strtok(NULL, ",");
+    char *hours = strtok(NULL, ",");
+
+    strncpy(employees[dbhdr->count - 1].name, name, sizeof(employees[dbhdr->count - 1].name));
+    strncpy(employees[dbhdr->count - 1].address, address, sizeof(employees[dbhdr->count - 1].address));
+    employees[dbhdr->count - 1].hours = atoi(hours);
+
+    return STATUS_SUCCESS;
+}
 
 int read_employees(int fd, struct dbheader_t *dbhdr, struct employee_t **employeesOut) {
+    if (fd < 0) {
+        printf("invalid fd\n");
+        return STATUS_ERROR;
+    }
+
+    int count = dbhdr->count;
+    int size_read = -1;
+
+    struct employee_t *employees = calloc(count, sizeof(struct employee_t));
+    if (employees == NULL) {
+        perror("calloc");
+        return STATUS_ERROR;
+    }
+
+    size_read = read(fd, employees, count * sizeof(struct employee_t));
+    if (size_read != (count * sizeof(struct employee_t))) {
+        printf("failed to read employees\n");
+        free(employees);
+        employees = NULL;
+        return STATUS_ERROR;
+    }
+
+    for (int i = 0; i < count; i++) {
+        employees[i].hours = ntohl(employees[i].hours);
+    }
+
+    *employeesOut = employees;
+    return STATUS_SUCCESS;
 }
 
 int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) {
@@ -28,18 +63,30 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) 
         return STATUS_ERROR;
     }
 
+    // count before htonl
+    int count_hostlong = dbhdr->count;
+
     dbhdr->magic = htonl(dbhdr->magic);
     dbhdr->version = htons(dbhdr->version);
-    dbhdr->count = htonl(dbhdr->count);
-    dbhdr->filesize = htonl(dbhdr->filesize);
+    dbhdr->count = htons(dbhdr->count);
+    // dbhdr->filesize = htonl(dbhdr->filesize);
+    dbhdr->filesize = htonl(sizeof(struct dbheader_t) + count_hostlong * sizeof(struct employee_t));
 
     lseek(fd, 0, SEEK_SET);
     size_written = write(fd, dbhdr, sizeof(struct dbheader_t));
     if (size_written != sizeof(struct dbheader_t)) {
-        perror("write");
+        perror("write header");
         return STATUS_ERROR;
     }
 
+    for (int i = 0; i < count_hostlong; i++) {
+        // employees[i].hours = htonl(employees[i].hours);
+        size_written = write(fd, &employees[i], sizeof(struct employee_t));
+        if (size_written != sizeof(struct employee_t)) {
+            perror("write employee");
+            return STATUS_ERROR;
+        }
+    }
     return STATUS_SUCCESS;
 }
 

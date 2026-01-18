@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
 #include "common.h"
@@ -16,25 +15,40 @@ void print_usage(char *argv[]) {
     return;
 }
 
+void my_free(void **ptr) {
+    if (ptr == NULL || *ptr == NULL) return;
+    free(*ptr);
+    *ptr = NULL;
+}
+
 int main(int argc, char *argv[]) {
     bool newfile = false;
     char *filepath = NULL;
+    char *addstring = NULL;
     int status_file_create = -1;
     int status_file_close = -1;
-    int status_db_header = -1;
+    int status_create_header = -1;
+    int status_validate_header = -1;
+    int status_read_employee = -1;
+    int status_add_employee = -1;
+    int status_write_db = -1;
     struct dbheader_t *dbheader = NULL;
+    struct employee_t *employees = NULL;
     int dbfd = -1;
 
     // getopt. "n"(new) and "f"(filename).
     // "nf:" ... "f" option requires an argument. (the text is in optarg.)
     int opt = 0;
-    while ((opt = getopt(argc, argv, "nf:")) != -1) {
+    while ((opt = getopt(argc, argv, "nf:a:")) != -1) {
         switch (opt) {
             case 'n':
                 newfile = true;
                 break;
             case 'f':
                 filepath = optarg;
+                break;
+            case 'a':
+                addstring = optarg;
                 break;
             case '?':
                 printf("Unknown option -%c\n", opt);
@@ -61,11 +75,12 @@ int main(int argc, char *argv[]) {
             return -1;
         }
 
-        status_db_header = create_db_header(&dbheader);
-        if (status_db_header == STATUS_ERROR) {
+        status_create_header = create_db_header(&dbheader);
+        if (status_create_header == STATUS_ERROR) {
             printf("failed to create database header\n");
             return -1;
         }
+        // printf("new file: done\n");
     } else {
         dbfd = open_db_file(filepath);
         if (dbfd == STATUS_ERROR) {
@@ -73,31 +88,90 @@ int main(int argc, char *argv[]) {
             return -1;
         }
 
-        status_db_header = validate_db_header(dbfd, &dbheader);
-        if (status_db_header == STATUS_ERROR) {
+        status_validate_header = validate_db_header(dbfd, &dbheader);
+        if (status_validate_header == STATUS_ERROR) {
             printf("failed to validate database header\n");
             return -1;
         }
+        // printf("validate file: done\n");
     }
 
-    status_db_header = output_file(dbfd, dbheader, NULL);
-    if (status_db_header == STATUS_ERROR) {
+    // read employees
+    status_read_employee = read_employees(dbfd, dbheader, &employees);
+    if (status_read_employee == STATUS_ERROR) {
+        // my_free((void **) &dbheader);
         free(dbheader);
+        dbheader = NULL;
+        return -1;
+    }
+    // printf("read employee: done\n");
+
+    // add an employee
+    if (addstring != NULL) {
+        // printf("add employee: start\n");
+        dbheader->count++;
+        employees = realloc(employees, dbheader->count * (sizeof(struct employee_t)));
+        if (employees == NULL) {
+            // my_free((void **) &dbheader);
+            // my_free((void **) &employees);
+            free(dbheader);
+            dbheader = NULL;
+            free(employees);
+            employees = NULL;
+            perror("realloc");
+            return -1;
+        }
+        // printf("realloc: done\n");
+
+        status_add_employee = add_employee(dbheader, employees, addstring);
+        if (status_add_employee ==  STATUS_ERROR) {
+            // printf("failed to add employee\n");
+            // my_free((void **) &dbheader);
+            // my_free((void **) &employees);
+            free(dbheader);
+            dbheader = NULL;
+            free(employees);
+            employees = NULL;
+            return -1;
+        }
+
+        // printf("add employee: done\n");
+    }
+
+    status_write_db = output_file(dbfd, dbheader, employees);
+    if (status_write_db == STATUS_ERROR) {
+        // my_free((void **) &dbheader);
+        // my_free((void **) &employees);
+        free(dbheader);
+        dbheader = NULL;
+        free(employees);
+        employees = NULL;
         printf("failed to write database header\n");
         return -1;
     }
+    // printf("write db: done\n");
 
     status_file_close = close_db_file(dbfd);
     if (status_file_close == STATUS_ERROR) {
+        // my_free((void **) &dbheader);
+        // my_free((void **) &employees);
         free(dbheader);
+        dbheader = NULL;
+        free(employees);
+        employees = NULL;
         printf("failed to close a dbfile. filepath=%s\n", filepath);
         return -1;
     }
+    // printf("close file: done\n");
     // printf("[closed] filepath=%s\n", filepath);
 
 
+    // my_free((void **) dbheader);
+    // my_free((void **) employees);
     free(dbheader);
     dbheader = NULL;
-
+    free(employees);
+    employees = NULL;
+    // printf("all done\n");
     return 0;
 }
