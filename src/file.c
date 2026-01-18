@@ -34,14 +34,14 @@ int create_db_file(char *filename) {
         return STATUS_ERROR;
     }
 
-    status_file_close = close(fd);
-    if (status_file_close == -1) {
-        perror("close");
-        return STATUS_ERROR;
-    }
+    // status_file_close = close(fd);
+    // if (status_file_close == -1) {
+    //     perror("close");
+    //     return STATUS_ERROR;
+    // }
 
     printf("file created. filepath=%s\n", filename);
-    return STATUS_SUCCESS;
+    return fd;
 }
 
 // open a dbfile.

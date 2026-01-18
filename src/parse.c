@@ -35,7 +35,7 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) 
 
     lseek(fd, 0, SEEK_SET);
     size_written = write(fd, dbhdr, sizeof(struct dbheader_t));
-    if (size_written == -1 || size_written != sizeof(struct dbheader_t)) {
+    if (size_written != sizeof(struct dbheader_t)) {
         perror("write");
         return STATUS_ERROR;
     }

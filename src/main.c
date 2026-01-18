@@ -23,7 +23,6 @@ int main(int argc, char *argv[]) {
     int status_file_close = -1;
     int status_db_header = -1;
     struct dbheader_t *dbheader = NULL;
-
     int dbfd = -1;
 
     // getopt. "n"(new) and "f"(filename).
@@ -56,31 +55,24 @@ int main(int argc, char *argv[]) {
 
     // create a file if newfile.
     if (newfile == true) {
-        status_file_create = create_db_file(filepath);
-        if (status_file_create == STATUS_ERROR) {
+        dbfd = create_db_file(filepath);
+        if (dbfd == STATUS_ERROR) {
             printf("failed to create a new dbfile. filepath=%s\n", filepath);
             return -1;
-        } else {
-            // printf("[created] filepath=%s\n", filepath);
         }
-    }
 
-    dbfd = open_db_file(filepath);
-    if (dbfd == STATUS_ERROR) {
-        printf("failed to open a dbfile. filepath=%s\n", filepath);
-        return -1;
-    } else {
-        // printf("[opened] filepath=%s\n", filepath);
-    }
-
-    if (newfile == true) {
-        // status_db_header = create_db_header(dbfd, &dbheader);
         status_db_header = create_db_header(&dbheader);
         if (status_db_header == STATUS_ERROR) {
             printf("failed to create database header\n");
             return -1;
         }
     } else {
+        dbfd = open_db_file(filepath);
+        if (dbfd == STATUS_ERROR) {
+            printf("failed to open a dbfile. filepath=%s\n", filepath);
+            return -1;
+        }
+
         status_db_header = validate_db_header(dbfd, &dbheader);
         if (status_db_header == STATUS_ERROR) {
             printf("failed to validate database header\n");
