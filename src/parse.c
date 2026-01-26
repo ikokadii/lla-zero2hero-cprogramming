@@ -9,8 +9,22 @@
 #include "common.h"
 #include "parse.h"
 
-// void list_employees(struct dbheader_t *dbhdr, struct employee_t *employees) {
-// }
+void list_employees(struct dbheader_t *dbhdr, struct employee_t *employees) {
+    if (NULL == dbhdr) {
+        return;
+    }
+    if (NULL == employees) {
+        return;
+    }
+
+    int i = 0;
+    for (; i < dbhdr->count; i++) {
+        printf("employee_%d: \n", i);
+        printf("\t name: %s\n", employees[i].name);
+        printf("\t address: %s\n", employees[i].address);
+        printf("\t hours: %d\n", employees[i].hours);
+    }
+}
 
 int add_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *addstring) {
     if (NULL == dbhdr) {
@@ -52,7 +66,6 @@ int add_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *
     strncpy(e[dbhdr->count - 1].name, name, sizeof(e[dbhdr->count - 1].name)-1);
     strncpy(e[dbhdr->count - 1].address, address, sizeof(e[dbhdr->count - 1].address)-1);
     e[dbhdr->count - 1].hours = atoi(hours);
-
     *employees = e;
     return STATUS_SUCCESS;
 }
@@ -113,7 +126,7 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) 
     }
 
     for (int i = 0; i < count_hostlong; i++) {
-        // employees[i].hours = htonl(employees[i].hours);
+        employees[i].hours = htonl(employees[i].hours);
         size_written = write(fd, &employees[i], sizeof(struct employee_t));
         if (size_written != sizeof(struct employee_t)) {
             perror("write employee");

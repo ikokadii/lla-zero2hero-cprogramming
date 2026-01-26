@@ -13,7 +13,7 @@ void print_usage(char *argv[]) {
     printf("\t -n - create new database file\n");
     printf("\t -f - (required) path to database file\n");
     printf("\t -l - list the employees\n");
-    printf("\t -a - add via CSV list of (name,address,salary)\n");
+    printf("\t -a - add via CSV list of (name,address,hours)\n");
     return;
 }
 
@@ -128,6 +128,10 @@ int main(int argc, char *argv[]) {
         }
 
         // printf("add employee: done\n");
+    }
+
+    if (list == true) {
+        list_employees(dbheader, employees);
     }
 
     status_write_db = output_file(dbfd, dbheader, employees);
