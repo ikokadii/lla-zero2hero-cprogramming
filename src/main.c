@@ -12,6 +12,8 @@ void print_usage(char *argv[]) {
     printf("Usage: %s -n -f <database file>\n", argv[0]);
     printf("\t -n - create new database file\n");
     printf("\t -f - (required) path to database file\n");
+    printf("\t -l - list the employees\n");
+    printf("\t -a - add via CSV list of (name,address,salary)\n");
     return;
 }
 
@@ -25,6 +27,8 @@ int main(int argc, char *argv[]) {
     bool newfile = false;
     char *filepath = NULL;
     char *addstring = NULL;
+    bool list = false;
+
     int status_file_create = -1;
     int status_file_close = -1;
     int status_create_header = -1;
@@ -39,7 +43,7 @@ int main(int argc, char *argv[]) {
     // getopt. "n"(new) and "f"(filename).
     // "nf:" ... "f" option requires an argument. (the text is in optarg.)
     int opt = 0;
-    while ((opt = getopt(argc, argv, "nf:a:")) != -1) {
+    while ((opt = getopt(argc, argv, "nf:a:l")) != -1) {
         switch (opt) {
             case 'n':
                 newfile = true;
@@ -49,6 +53,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'a':
                 addstring = optarg;
+                break;
+            case 'l':
+                list = true;
                 break;
             case '?':
                 printf("Unknown option -%c\n", opt);
@@ -108,22 +115,7 @@ int main(int argc, char *argv[]) {
 
     // add an employee
     if (addstring != NULL) {
-        // printf("add employee: start\n");
-        dbheader->count++;
-        employees = realloc(employees, dbheader->count * (sizeof(struct employee_t)));
-        if (employees == NULL) {
-            // my_free((void **) &dbheader);
-            // my_free((void **) &employees);
-            free(dbheader);
-            dbheader = NULL;
-            free(employees);
-            employees = NULL;
-            perror("realloc");
-            return -1;
-        }
-        // printf("realloc: done\n");
-
-        status_add_employee = add_employee(dbheader, employees, addstring);
+        status_add_employee = add_employee(dbheader, &employees, addstring);
         if (status_add_employee ==  STATUS_ERROR) {
             // printf("failed to add employee\n");
             // my_free((void **) &dbheader);
